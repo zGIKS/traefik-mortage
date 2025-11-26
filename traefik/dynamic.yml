@@ -21,7 +21,7 @@ http:
 
   routers:
     mortgage-api:
-      rule: "Host(`localhost`) && (PathPrefix(`/swagger`) || PathPrefix(`/api/v1`))"
+      rule: "(PathPrefix(`/swagger`) || PathPrefix(`/api/v1`))"
       service: mortgage-api
       entrypoints:
         - web
@@ -29,7 +29,7 @@ http:
         - cors
 
     sbs-api:
-      rule: "Host(`localhost`) && (PathPrefix(`/api/v1/rates`) || PathPrefix(`/api/v1/date`))"
+      rule: "(PathPrefix(`/api/v1/rates`) || PathPrefix(`/api/v1/date`))"
       service: sbs-api
       entrypoints:
         - web
@@ -40,9 +40,9 @@ http:
     mortgage-api:
       loadBalancer:
         servers:
-          - url: "http://192.168.100.63:8181"
+          - url: "http://host.docker.internal:8181"
 
     sbs-api:
       loadBalancer:
         servers:
-          - url: "http://192.168.100.63:8182"
+          - url: "http://host.docker.internal:8182"

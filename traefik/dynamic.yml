@@ -1,0 +1,48 @@
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowOriginList:
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "*"
+        addVaryHeader: true
+
+    strip-api-v1:
+      stripPrefix:
+        prefixes:
+          - /api/v1
+
+  routers:
+    mortgage-api:
+      rule: "Host(`localhost`) && (PathPrefix(`/swagger`) || PathPrefix(`/api/v1`))"
+      service: mortgage-api
+      entrypoints:
+        - web
+      middlewares:
+        - cors
+
+    sbs-api:
+      rule: "Host(`localhost`) && (PathPrefix(`/api/v1/rates`) || PathPrefix(`/api/v1/date`))"
+      service: sbs-api
+      entrypoints:
+        - web
+      middlewares:
+        - cors
+
+  services:
+    mortgage-api:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.100.63:8181"
+
+    sbs-api:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.100.63:8182"

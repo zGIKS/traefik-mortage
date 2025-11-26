@@ -1,0 +1,22 @@
+http:
+  routers:
+    api-local:
+      entryPoints:
+        - web
+      rule: PathPrefix(`/api`)
+      service: api-local
+      middlewares:
+        - strip-api
+        - cors@file
+
+  middlewares:
+    strip-api:
+      stripPrefix:
+        prefixes:
+          - /api
+
+  services:
+    api-local:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:8080"

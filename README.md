@@ -1,42 +1,40 @@
-# Traefik + Go API Gateway
+# Traefik Gateway para APIs Externas
 
-Pequeño ejemplo para levantar un gateway HTTP con Traefik y enrutar tráfico hacia servicios en Go.
+Gateway HTTP con Traefik que enruta tráfico hacia APIs externas (Mortgage e SBS).
 
 ## Qué incluye
-- Traefik v3 como reverse proxy (dashboard en `http://localhost:8080/dashboard/`).
-- Servicio de ejemplo en Go (`cmd/api`) expuesto en `http://localhost/api/...`.
-- Middleware CORS definido en `traefik/dynamic.yml` y aplicado al router `api`.
-- `docker-compose.yml` listo para levantar gateway y servicios.
+- Traefik v3 como reverse proxy (dashboard en `http://localhost:8180`).
+- Ruteo a API de Mortgage (IAM y cálculos) en puerto 8181.
+- Ruteo a API de SBS (tasas TEA) en puerto 8082.
+- Middleware CORS aplicado a todas las rutas.
+- `docker-compose.yml` para levantar solo Traefik.
 
 ## Ejecución rápida
 1) Requisitos: Docker y Docker Compose v2.
-2) Construir y levantar todo:
+2) Levantar Traefik:
 ```
-docker compose up --build
+sudo docker-compose up -d
 ```
-3) Probar rutas pasando por Traefik:
+3) Probar rutas:
 ```
-curl http://localhost/api/health
-curl "http://localhost/api/v1/greet?name=Ana"
-curl -X POST http://localhost/api/v1/echo \
-  -H "Content-Type: application/json" \
-  -d '{"mensaje":"hola"}'
+# Mortgage API
+curl http://localhost/api/v1/iam/register -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com","full_name":"Test","password":"123"}'
+curl http://localhost/swagger/index.html  # Docs de Mortgage
+
+# SBS API
+curl http://localhost/api/v1/rates?date=2023-01-01
+curl http://localhost/api/v1/date
 ```
 
 ## Cómo funciona el ruteo
-- Traefik escucha en el entrypoint `web` (puerto 80) y usa la regla `Host("localhost") && PathPrefix("/api")`.
-- El middleware `api-strip` elimina el prefijo `/api`, por lo que el servicio Go recibe `/health` o `/v1/...`.
-- Los servicios se descubren vía etiquetas Docker (proveedor `docker`) y se enriquecen con middlewares definidos en `traefik/dynamic.yml` (proveedor `file`).
+- Traefik escucha en puerto 80.
+- `/api/v1/iam/*` y `/api/v1/mortgage/*` van a Mortgage API (192.168.100.63:8181).
+- `/api/v1/rates` y `/api/v1/date` van a SBS API (192.168.100.63:8082).
+- `/swagger/*` va a Mortgage API.
+- CORS habilitado para todos.
 
 ## Añadir más servicios
-1) Agrega un nuevo servicio en `docker-compose.yml` con `traefik.enable=true`.
-2) Define una regla de router (`traefik.http.routers.<nombre>.rule`) y opcionalmente un middleware de strip prefix para no duplicar rutas.
-3) Expón el puerto interno del servicio con `traefik.http.services.<nombre>.loadbalancer.server.port=<puerto>`.
-4) Si el servicio necesita CORS u otros headers, referencia un middleware del archivo `traefik/dynamic.yml` o crea uno nuevo ahí.
+Edita `traefik/dynamic.yml` para agregar nuevos routers y servicios, apuntando a IPs/puertos externos.
 
-## Desarrollo local del servicio Go
-- Ejecutar sin Docker:
-```
-go run ./cmd/api
-```
-- El servidor escucha en `:8080`. Con Traefik activo, las peticiones deben ir a `http://localhost/api/...` para que se aplique el ruteo.
+## Desarrollo
+Las APIs externas deben estar corriendo en sus respectivos puertos (8181 y 8082).
